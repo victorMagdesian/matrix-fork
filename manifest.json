@@ -1,0 +1,24 @@
+{
+  "name": "MATRIX Mobile - Jogo de Cartas",
+  "short_name": "MATRIX",
+  "description": "Jogo de cartas MATRIX otimizado para dispositivos móveis",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#00ff41",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["games", "entertainment"],
+  "lang": "pt-BR"
+}

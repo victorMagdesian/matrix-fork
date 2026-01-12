@@ -2,85 +2,96 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>MATRIX (Versão Solo) – Drag & Drop com Pilha de Descarte</title>
-  <div class="modal-content">
-    <h2>Regras MATRIX em Casa</h2>
-
-    <p>
-      <strong>Objetivo:</strong> Formar combinações de cartas em grupos ou sequências (trincas e sequências de 3 cartas, mais 1 par de 2 cartas) até obter 3/3/3/2.
-    </p>
-
-    <h3>Cartas 1 e 9</h3>
-    <p>
-      As cartas de valor <strong>1</strong> e <strong>9</strong> não são removidas automaticamente na compra, mas 
-      <strong>sempre aparecem no início da mão</strong> ao organizar. Todas as cartas descartadas (incluindo 1 e 9) 
-      vão para a seção “Cartas Banidas”.
-    </p>
-
-    <h3>Como Jogar</h3>
-    <ol>
-      <li>Você começa com 11 cartas na mão.</li>
-      <li>Se tiver 11, compre 1 carta (que aparece em "Carta Comprada").</li>
-      <li>Para continuar, descarte uma carta da mão (então a carta comprada entra na mão) <em>ou</em> descarte diretamente a carta comprada, se quiser se livrar dela.</li>
-      <li>Use “Organizar Sequências” ou “Organizar Grupos” para escolher um método de ordenação. Sempre que comprar, o jogo reaplica o método atual.</li>
-      <li><strong>Bater</strong>: se conseguir 3/3/3/2 (3 trincas/sequências + 1 par), clique em “Verificar Bater”.</li>
-    </ol>
-
-    <p>
-      <strong>Dica:</strong> Clique em uma carta na sua mão ou na carta comprada para descartá-la (ir para banimento).
-    </p>
-  </div>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Jogo de cartas MATRIX otimizado para dispositivos móveis" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="icon-192.png" />
+  <title>MATRIX Mobile - Jogo de Cartas</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>MATRIX (Versão Solo)</h1>
-    <div id="gameControls">
-      <button id="btnStart" class="btn">Iniciar Jogo</button>
-      <button id="btnRestart" class="btn">Reiniciar Jogo</button>
-      <button id="btnDraw" class="btn">Comprar Carta</button>
-      <button id="btnCheckWin" class="btn">Verificar Bater</button>
+  <!-- Modal de Regras -->
+  <div id="rulesModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2>Regras MATRIX</h2>
+      <p><strong>Objetivo:</strong> Formar combinações de cartas em grupos ou sequências (3/3/3/2).</p>
+      
+      <h3>Como Jogar</h3>
+      <ol>
+        <li>Comece com 11 cartas na mão</li>
+        <li>Compre 1 carta quando tiver 11 cartas</li>
+        <li>Descarte uma carta para continuar</li>
+        <li>Organize em grupos de 3 + 1 par</li>
+        <li>Toque em "Verificar Bater" para ganhar</li>
+      </ol>
+      
+      <p><strong>Dica:</strong> Toque em uma carta para descartá-la ou arraste para os grupos.</p>
     </div>
+  </div>
+
+  <div class="container">
+    <!-- Header com título e controles -->
+    <header class="game-header">
+      <h1>MATRIX Mobile</h1>
+      <button id="btnRules" class="btn btn-info">?</button>
+    </header>
+
+    <!-- Controles do jogo -->
+    <div id="gameControls" class="controls">
+      <button id="btnStart" class="btn btn-primary">Iniciar</button>
+      <button id="btnRestart" class="btn btn-secondary">Reiniciar</button>
+      <button id="btnDraw" class="btn btn-success">Comprar</button>
+      <button id="btnCheckWin" class="btn btn-warning">Verificar</button>
+    </div>
+
+    <!-- Mensagem de status -->
     <div id="message" class="message"></div>
     
-    <h2>Sua Mão</h2>
-    <!-- Removemos a classe "card-area" para evitar conflito com o novo layout de grid -->
-    <div id="playerHand" class="dropzone" data-max="999">
-      <!-- A mão também age como dropzone para receber cartas de qualquer lugar -->
-    </div>
+    <!-- Informação de cartas -->
+    <div id="handInfo" class="info"></div>
     
-    <h2>Grupos para Bater (3x3x3x2)</h2>
-    <div id="groupsContainer">
-      <div id="group1" class="dropzone" data-max="3">
-        <h3>Grupo 1 (3 cartas)</h3>
-      </div>
-      <div id="group2" class="dropzone" data-max="3">
-        <h3>Grupo 2 (3 cartas)</h3>
-      </div>
-      <div id="group3" class="dropzone" data-max="3">
-        <h3>Grupo 3 (3 cartas)</h3>
-      </div>
-      <div id="group4" class="dropzone" data-max="2">
-        <h3>Grupo 4 (2 cartas)</h3>
-      </div>
-    </div>
+    <!-- Mão do jogador -->
+    <section class="hand-section">
+      <h2>Sua Mão</h2>
+      <div id="playerHand" class="hand-area dropzone" data-max="999"></div>
+    </section>
     
-    <!-- Informação sobre a contagem de cartas -->
-    <div id="handInfo" class="info">
-      Sua mão (incluindo os grupos) deve ter 11 cartas na fase de compra e 12 antes do descarte.
-    </div>
+    <!-- Grupos para bater -->
+    <section class="groups-section">
+      <h2>Grupos (3+3+3+2)</h2>
+      <div id="groupsContainer" class="groups-grid">
+        <div id="group1" class="group-zone dropzone" data-max="3">
+          <h3>Grupo 1</h3>
+          <div class="group-cards"></div>
+        </div>
+        <div id="group2" class="group-zone dropzone" data-max="3">
+          <h3>Grupo 2</h3>
+          <div class="group-cards"></div>
+        </div>
+        <div id="group3" class="group-zone dropzone" data-max="3">
+          <h3>Grupo 3</h3>
+          <div class="group-cards"></div>
+        </div>
+        <div id="group4" class="group-zone dropzone" data-max="2">
+          <h3>Par</h3>
+          <div class="group-cards"></div>
+        </div>
+      </div>
+    </section>
     
-    <h2>Pilha de Descarte</h2>
-    <div id="discardPile" class="discard-zone dropzone" data-max="999">
-      <h3>Pilha de Descarte</h3>
-      <div id="discardCards" class="discard-cards"></div>
-    </div>
-    
-    <footer class="footer">
-      Arraste as cartas para os grupos ou para a pilha de descarte para organizar sua batida.
-    </footer>
+    <!-- Pilha de descarte -->
+    <section class="discard-section">
+      <h2>Descarte</h2>
+      <div id="discardPile" class="discard-zone dropzone" data-max="999">
+        <div id="discardCards" class="discard-cards"></div>
+      </div>
+    </section>
   </div>
+
   <script src="script.js"></script>
 </body>
 </html>

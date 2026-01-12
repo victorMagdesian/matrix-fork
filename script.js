@@ -7,6 +7,15 @@ let groups = { group1: [], group2: [], group3: [], group4: [] };
 let discardPile = [];
 let cardIdCounter = 0;
 let gameStarted = false;
+let selectedCard = null;
+let touchStartTime = 0;
+
+/******************************************************
+ * DETECÇÃO DE DISPOSITIVO MÓVEL
+ ******************************************************/
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                 ('ontouchstart' in window) || 
+                 (navigator.maxTouchPoints > 0);
 
 /******************************************************
  * CRIA E EMBARALHA O BARALHO
@@ -41,11 +50,14 @@ function startGame() {
   groups = { group1: [], group2: [], group3: [], group4: [] };
   discardPile = [];
   gameStarted = true;
+  selectedCard = null;
+  
   // 11 cartas iniciais
   for (let i = 0; i < 11; i++) {
     playerHand.push(deck.pop());
   }
-  document.getElementById("message").textContent = "Jogo iniciado!";
+  
+  showMessage("Jogo iniciado! Toque nas cartas para selecioná-las.", "success");
   renderAll();
 }
 
@@ -56,17 +68,17 @@ function resetGameState() {
   discardPile = [];
   cardIdCounter = 0;
   gameStarted = false;
-  document.getElementById("message").textContent =
-    "Jogo reiniciado. Clique em 'Iniciar Jogo' para jogar novamente.";
-  // Limpa as áreas
-  document.getElementById("playerHand").innerHTML = "";
-  const dropzones = document.querySelectorAll(".dropzone");
-  dropzones.forEach(zone => {
-    let header = zone.querySelector("h3");
-    zone.innerHTML = header ? header.outerHTML : "";
-  });
-  document.getElementById("discardCards").innerHTML = "";
+  selectedCard = null;
+  
+  showMessage("Jogo reiniciado. Toque em 'Iniciar' para começar.", "info");
+  clearAllAreas();
   updateHandCountMessage();
+}
+
+function clearAllAreas() {
+  document.getElementById("playerHand").innerHTML = "";
+  document.querySelectorAll(".group-cards").forEach(area => area.innerHTML = "");
+  document.getElementById("discardCards").innerHTML = "";
 }
 
 /******************************************************
@@ -74,24 +86,40 @@ function resetGameState() {
  ******************************************************/
 function drawCard() {
   if (!gameStarted) {
-    alert("Inicie o jogo primeiro!");
+    showMessage("Inicie o jogo primeiro!", "error");
     return;
   }
   if (deck.length === 0) {
-    alert("O baralho acabou!");
+    showMessage("O baralho acabou!", "error");
     return;
   }
   
-  // DESTACA: Bloqueio de compra se não tiver 11 cartas (mão + grupos)
   let total = getTotalCards();
   if (total !== 11) {
-    alert("Você só pode comprar se estiver na fase de compra (total de 11 cartas).");
+    showMessage("Você só pode comprar com 11 cartas no total.", "error");
     return;
   }
 
-  // Agora podemos comprar
   playerHand.push(deck.pop());
+  showMessage("Carta comprada! Agora descarte uma carta.", "info");
   renderAll();
+}
+
+/******************************************************
+ * SISTEMA DE MENSAGENS
+ ******************************************************/
+function showMessage(text, type = "info") {
+  const messageEl = document.getElementById("message");
+  messageEl.textContent = text;
+  messageEl.className = `message ${type}`;
+  
+  // Auto-hide após 3 segundos
+  setTimeout(() => {
+    if (messageEl.textContent === text) {
+      messageEl.textContent = "";
+      messageEl.className = "message";
+    }
+  }, 3000);
 }
 
 /******************************************************
@@ -115,18 +143,12 @@ function renderHand() {
 
 function renderGroups() {
   for (let groupId in groups) {
-    const groupDiv = document.getElementById(groupId);
-    groupDiv.innerHTML = "";
-    let header = document.createElement("h3");
-    header.textContent =
-      groupId === "group4"
-        ? "Grupo 4 (2 cartas)"
-        : groupId.charAt(0).toUpperCase() + groupId.slice(1) + " (3 cartas)";
-    groupDiv.appendChild(header);
-
+    const groupCardsDiv = document.querySelector(`#${groupId} .group-cards`);
+    groupCardsDiv.innerHTML = "";
+    
     groups[groupId].forEach(card => {
       const cardEl = createCardElement(card, groupId);
-      groupDiv.appendChild(cardEl);
+      groupCardsDiv.appendChild(cardEl);
     });
   }
 }
@@ -144,11 +166,149 @@ function createCardElement(card, source) {
   const cardEl = document.createElement("div");
   cardEl.classList.add("card", card.color);
   cardEl.textContent = card.value;
-  cardEl.setAttribute("draggable", "true");
   cardEl.setAttribute("data-card-id", card.id);
   cardEl.dataset.source = source;
-  cardEl.addEventListener("dragstart", dragStart);
+  
+  // Eventos para mobile e desktop
+  if (isMobile) {
+    cardEl.addEventListener("touchstart", handleTouchStart, { passive: false });
+    cardEl.addEventListener("touchend", handleTouchEnd, { passive: false });
+  } else {
+    cardEl.setAttribute("draggable", "true");
+    cardEl.addEventListener("dragstart", dragStart);
+    cardEl.addEventListener("click", handleCardClick);
+  }
+  
   return cardEl;
+}
+
+/******************************************************
+ * EVENTOS TOUCH PARA MOBILE
+ ******************************************************/
+function handleTouchStart(event) {
+  event.preventDefault();
+  touchStartTime = Date.now();
+  
+  // Adiciona feedback visual
+  event.target.style.transform = "scale(0.95)";
+}
+
+function handleTouchEnd(event) {
+  event.preventDefault();
+  const touchDuration = Date.now() - touchStartTime;
+  
+  // Remove feedback visual
+  event.target.style.transform = "";
+  
+  // Se foi um toque rápido (não drag), trata como clique
+  if (touchDuration < 300) {
+    handleCardClick(event);
+  }
+}
+
+function handleCardClick(event) {
+  const cardId = parseInt(event.target.getAttribute("data-card-id"));
+  const source = event.target.dataset.source;
+  
+  // Se não há carta selecionada, seleciona esta
+  if (!selectedCard) {
+    selectCard(cardId, source, event.target);
+    return;
+  }
+  
+  // Se clicou na mesma carta, deseleciona
+  if (selectedCard.id === cardId) {
+    deselectCard();
+    return;
+  }
+  
+  // Se clicou em outra carta, move a selecionada para cá
+  const targetZone = getZoneFromSource(source);
+  if (targetZone) {
+    moveSelectedCardTo(targetZone);
+  }
+}
+
+function selectCard(cardId, source, element) {
+  selectedCard = { id: cardId, source: source, element: element };
+  element.classList.add("selected");
+  showMessage("Carta selecionada. Toque onde quer movê-la.", "info");
+  
+  // Destaca zonas válidas
+  highlightValidZones(true);
+}
+
+function deselectCard() {
+  if (selectedCard) {
+    selectedCard.element.classList.remove("selected");
+    selectedCard = null;
+    showMessage("Seleção cancelada.", "info");
+    highlightValidZones(false);
+  }
+}
+
+function highlightValidZones(highlight) {
+  const zones = document.querySelectorAll(".dropzone");
+  zones.forEach(zone => {
+    if (highlight) {
+      zone.style.borderColor = "#00ff41";
+      zone.style.backgroundColor = "rgba(0, 255, 65, 0.1)";
+    } else {
+      zone.style.borderColor = "";
+      zone.style.backgroundColor = "";
+    }
+  });
+}
+
+function getZoneFromSource(source) {
+  if (source === "hand") return "playerHand";
+  if (source === "discardPile") return "discardPile";
+  if (groups[source]) return source;
+  return null;
+}
+
+/******************************************************
+ * EVENTOS DE ZONA (TOUCH)
+ ******************************************************/
+function setupZoneEvents() {
+  const zones = document.querySelectorAll(".dropzone");
+  zones.forEach(zone => {
+    if (isMobile) {
+      zone.addEventListener("touchend", handleZoneTouch, { passive: false });
+    } else {
+      zone.addEventListener("dragover", dragOver);
+      zone.addEventListener("dragleave", dragLeave);
+      zone.addEventListener("drop", drop);
+    }
+    
+    // Clique para mover carta selecionada
+    zone.addEventListener("click", handleZoneClick);
+  });
+}
+
+function handleZoneTouch(event) {
+  event.preventDefault();
+  if (selectedCard) {
+    const zoneId = event.currentTarget.id;
+    moveSelectedCardTo(zoneId);
+  }
+}
+
+function handleZoneClick(event) {
+  if (selectedCard && !event.target.classList.contains("card")) {
+    const zoneId = event.currentTarget.id;
+    moveSelectedCardTo(zoneId);
+  }
+}
+
+function moveSelectedCardTo(targetZone) {
+  if (!selectedCard) return;
+  
+  const success = moveCard(selectedCard.id, selectedCard.source, targetZone);
+  if (success) {
+    deselectCard();
+    renderAll();
+  }
 }
 
 /******************************************************
@@ -157,17 +317,23 @@ function createCardElement(card, source) {
 function updateHandCountMessage() {
   let total = getTotalCards();
   let handInfoEl = document.getElementById("handInfo");
-  handInfoEl.textContent = `Total de cartas (mão + grupos): ${total}. (11 na fase de compra; 12 antes do descarte)`;
+  
+  let phase = "";
+  if (total === 11) phase = " (Fase de compra)";
+  else if (total === 12) phase = " (Fase de descarte)";
+  else if (total < 11) phase = " (Faltam cartas)";
+  else phase = " (Muitas cartas)";
+  
+  handInfoEl.textContent = `Total: ${total} cartas${phase}`;
 }
 
-// Função auxiliar para saber o total de cartas do jogador (mão + grupos)
 function getTotalCards() {
   let groupCount = groups.group1.length + groups.group2.length + groups.group3.length + groups.group4.length;
   return playerHand.length + groupCount;
 }
 
 /******************************************************
- * DRAG & DROP
+ * DRAG & DROP (DESKTOP)
  ******************************************************/
 function dragStart(event) {
   const cardId = event.target.getAttribute("data-card-id");
@@ -188,64 +354,78 @@ function drop(event) {
   event.preventDefault();
   event.currentTarget.classList.remove("over");
   const data = JSON.parse(event.dataTransfer.getData("text/plain"));
-  const targetId = event.currentTarget.id; 
-  moveCard(data.cardId, data.source, targetId);
+  const targetId = event.currentTarget.id;
+  moveCard(parseInt(data.cardId), data.source, targetId);
+  renderAll();
 }
 
+/******************************************************
+ * MOVER CARTAS
+ ******************************************************/
 function moveCard(cardId, from, to) {
-  cardId = parseInt(cardId);
-
-  // 1) Se o destino for descarte, checa total ANTES de remover a carta
+  // Validação para descarte
   if (to === "discardPile" || to === "discardCards") {
-    let totalBefore = getTotalCards(); // total atual (antes de remover)
+    let totalBefore = getTotalCards();
     if (totalBefore !== 12) {
-      alert("Você só pode descartar se estiver na fase de descarte (total de 12 cartas).");
-      return; // sai daqui, não remove a carta
+      showMessage("Só pode descartar com 12 cartas no total.", "error");
+      return false;
     }
   }
 
-  // 2) Agora sim, remove do local de origem
-  let card;
+  // Remove da origem
+  let card = removeCardFromSource(cardId, from);
+  if (!card) return false;
+
+  // Adiciona ao destino
+  const success = addCardToDestination(card, to, from);
+  if (!success) {
+    restoreCardToSource(card, from);
+    return false;
+  }
+
+  // Feedback de sucesso
+  if (to === "discardPile" || to === "discardCards") {
+    showMessage("Carta descartada!", "success");
+  } else {
+    showMessage("Carta movida!", "success");
+  }
+
+  return true;
+}
+
+function removeCardFromSource(cardId, from) {
   if (from === "hand") {
     const idx = playerHand.findIndex(c => c.id === cardId);
-    if (idx === -1) return;
-    card = playerHand.splice(idx, 1)[0];
+    return idx !== -1 ? playerHand.splice(idx, 1)[0] : null;
   } else if (from === "discardPile") {
     const idx = discardPile.findIndex(c => c.id === cardId);
-    if (idx === -1) return;
-    card = discardPile.splice(idx, 1)[0];
-  } else {
-    // Está em um dos grupos
-    if (groups[from]) {
-      const idx = groups[from].findIndex(c => c.id === cardId);
-      if (idx === -1) return;
-      card = groups[from].splice(idx, 1)[0];
-    }
+    return idx !== -1 ? discardPile.splice(idx, 1)[0] : null;
+  } else if (groups[from]) {
+    const idx = groups[from].findIndex(c => c.id === cardId);
+    return idx !== -1 ? groups[from].splice(idx, 1)[0] : null;
   }
+  return null;
+}
 
-  // 3) Destino: se for descarte, agora adiciona sem problemas
+function addCardToDestination(card, to, from) {
   if (to === "discardPile" || to === "discardCards") {
     discardPile.push(card);
+    return true;
   } else if (to === "playerHand") {
     playerHand.push(card);
+    return true;
   } else if (groups[to]) {
     const dropZone = document.getElementById(to);
     const max = parseInt(dropZone.dataset.max);
     if (groups[to].length >= max) {
-      alert("Esse grupo já está completo.");
-      restoreCardToSource(card, from);
-      renderAll();
-      return;
+      showMessage(`Grupo já está completo (${max} cartas).`, "error");
+      return false;
     }
     groups[to].push(card);
-  } else {
-    // Se cair aqui, não reconheceu o destino
-    restoreCardToSource(card, from);
+    return true;
   }
-
-  renderAll();
+  return false;
 }
-
 
 function restoreCardToSource(card, from) {
   if (from === "hand") {
@@ -258,8 +438,7 @@ function restoreCardToSource(card, from) {
 }
 
 /******************************************************
- * VERIFICAR BATIDA (3x3x3 + 2)
- * 1 e 9 não podem participar de sets
+ * VERIFICAR BATIDA
  ******************************************************/
 function checkWin() {
   if (
@@ -268,8 +447,7 @@ function checkWin() {
     groups.group3.length !== 3 ||
     groups.group4.length !== 2
   ) {
-    document.getElementById("message").textContent =
-      "Você não tem a configuração 3x3x3 + 2.";
+    showMessage("Precisa ter 3+3+3+2 cartas nos grupos.", "error");
     return;
   }
   
@@ -278,25 +456,27 @@ function checkWin() {
   let g3 = groups.group3;
   let g4 = groups.group4;
   
-  // Se qualquer grupo tiver carta 1 ou 9, é inválido
+  // Verifica cartas 1 ou 9
   if (contains19(g1) || contains19(g2) || contains19(g3) || contains19(g4)) {
-    document.getElementById("message").textContent =
-      "Você incluiu carta(s) 1 ou 9 em seus grupos. Elas não podem bater.";
+    showMessage("Cartas 1 e 9 não podem formar grupos válidos.", "error");
     return;
   }
   
-  // Verifica se g1, g2, g3 são "run" ou "group"
-  // e se g4 é par ou mini-sequência
+  // Verifica combinações válidas
   if (
     (isValidRun(g1) || isValidGroup(g1)) &&
     (isValidRun(g2) || isValidGroup(g2)) &&
     (isValidRun(g3) || isValidGroup(g3)) &&
     isValidPair(g4)
   ) {
-    document.getElementById("message").textContent = "Parabéns! Você bateu!";
+    showMessage("🎉 PARABÉNS! VOCÊ BATEU! 🎉", "success");
+    // Adiciona efeito visual de vitória
+    document.body.style.animation = "victory 1s ease";
+    setTimeout(() => {
+      document.body.style.animation = "";
+    }, 1000);
   } else {
-    document.getElementById("message").textContent =
-      "Não é uma combinação válida para bater.";
+    showMessage("Combinação inválida. Verifique os grupos.", "error");
   }
 }
 
@@ -334,20 +514,71 @@ function isValidPair(cards) {
 }
 
 /******************************************************
- * CONFIGURA EVENTOS APÓS O CARREGAMENTO
+ * MODAL DE REGRAS
  ******************************************************/
-window.addEventListener("load", function(){
-  // Configura eventos de drop em todos os .dropzone
-  const dropzones = document.querySelectorAll(".dropzone");
-  dropzones.forEach(zone => {
-    zone.addEventListener("dragover", dragOver);
-    zone.addEventListener("dragleave", dragLeave);
-    zone.addEventListener("drop", drop);
+function setupModal() {
+  const modal = document.getElementById("rulesModal");
+  const btnRules = document.getElementById("btnRules");
+  const closeBtn = document.querySelector(".close");
+
+  btnRules.addEventListener("click", () => {
+    modal.style.display = "block";
   });
+
+  closeBtn.addEventListener("click", () => {
+    modal.style.display = "none";
+  });
+
+  window.addEventListener("click", (event) => {
+    if (event.target === modal) {
+      modal.style.display = "none";
+    }
+  });
+}
+
+/******************************************************
+ * INICIALIZAÇÃO
+ ******************************************************/
+window.addEventListener("load", function() {
+  // Registra service worker para PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js')
+      .then(function(registration) {
+        console.log('ServiceWorker registrado com sucesso:', registration.scope);
+      })
+      .catch(function(error) {
+        console.log('Falha ao registrar ServiceWorker:', error);
+      });
+  }
+
+  // Configura eventos
+  setupZoneEvents();
+  setupModal();
 
   // Botões
   document.getElementById("btnStart").addEventListener("click", startGame);
   document.getElementById("btnRestart").addEventListener("click", resetGameState);
   document.getElementById("btnDraw").addEventListener("click", drawCard);
   document.getElementById("btnCheckWin").addEventListener("click", checkWin);
+
+  // Mensagem inicial
+  showMessage("Bem-vindo ao MATRIX Mobile! Toque em 'Iniciar' para começar.", "info");
+  
+  // Adiciona CSS para animação de vitória
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes victory {
+      0%, 100% { background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%); }
+      50% { background: linear-gradient(135deg, #00ff41 0%, #00cc33 100%); }
+    }
+  `;
+  document.head.appendChild(style);
 });
+
+// Previne zoom no double-tap em iOS
+document.addEventListener('touchend', function (event) {
+  const now = (new Date()).getTime();
+  if (now - touchStartTime < 500) {
+    event.preventDefault();
+  }
+}, false);

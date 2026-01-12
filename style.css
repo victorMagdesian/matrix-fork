@@ -3,140 +3,357 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
-html, body {
-  height: 100%;
-  font-family: Arial, sans-serif;
-  background: #000;
-  color: #00ff00;
-}
-.container {
-  width: 90%;
-  max-width: 900px;
-  margin: 20px auto;
-  padding: 20px;
-  background: #111;
-  border-radius: 8px;
-  text-align: center;
-}
-h1, h2, h3 {
-  margin-bottom: 10px;
-}
-.btn {
-  padding: 10px 20px;
-  margin: 5px;
-  font-size: 1em;
-  background-color: #00cc00;
-  color: #000;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-.btn:hover {
-  background-color: #333;
-}
-.message {
-  margin: 10px 0;
-  font-size: 1.2em;
-  min-height: 40px;
-}
-/* Informação sobre a contagem de cartas */
-.info {
-  margin: 10px 0;
-  font-size: 1em;
-  color: #00ff00;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Cartas (estilo geral) */
-.card {
-  width: 12vw;
-  max-width: 80px;
-  aspect-ratio: 2/3;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+  color: #00ff41;
+  overflow-x: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Container principal */
+.container {
+  width: 100%;
+  min-height: 100vh;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Header */
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 2px solid #00ff41;
+}
+
+.game-header h1 {
+  font-size: 1.8rem;
   font-weight: bold;
-  font-size: 1.5em;
+  text-shadow: 0 0 10px #00ff41;
+}
+
+/* Controles */
+.controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.btn {
+  padding: 12px 8px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-height: 44px; /* Tamanho mínimo para touch */
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #00ff41, #00cc33);
+  color: #000;
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #666, #444);
+  color: #fff;
+}
+
+.btn-success {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  color: #fff;
+}
+
+.btn-warning {
+  background: linear-gradient(135deg, #ffc107, #fd7e14);
+  color: #000;
+}
+
+.btn-info {
+  background: linear-gradient(135deg, #17a2b8, #007bff);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+/* Mensagens */
+.message {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: bold;
+  min-height: 30px;
+  padding: 8px;
+  border-radius: 6px;
+  background: rgba(0, 255, 65, 0.1);
+  border: 1px solid #00ff41;
+}
+
+.info {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #00cc33;
+  padding: 5px;
+}
+
+/* Seções */
+section {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 15px;
+  border: 1px solid #333;
+}
+
+section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 10px;
+  text-align: center;
+  color: #00ff41;
+  text-shadow: 0 0 5px #00ff41;
+}
+
+/* Cartas */
+.card {
+  width: 50px;
+  height: 70px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  font-weight: bold;
+  font-size: 1.1rem;
   display: flex;
   justify-content: center;
   align-items: center;
   text-align: center;
   color: #fff;
-  background: #222;
-  cursor: grab;
-  margin: 5px; /* espaço entre cartas no grid */
-}
-.card:active {
-  cursor: grabbing;
-}
-/* Cores das cartas */
-.card.red { background: #ff5c5c; }
-.card.blue { background: #49a0ff; }
-.card.green { background: #4fd14f; }
-.card.yellow { background: #ffd142; color: #000; }
-
-/* Zonas de drop (mão, grupos, descarte) */
-.dropzone {
-  border: 2px dashed #00ff00;
-  border-radius: 8px;
-  min-height: 100px;
-  padding: 10px;
-  margin: 10px;
-  flex: 1;
+  cursor: pointer;
+  margin: 3px;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
   position: relative;
 }
-.dropzone.over {
-  border-color: #00cc00;
-  background: rgba(0,255,0,0.1);
-}
-.dropzone h3 {
-  margin-bottom: 5px;
-  font-size: 1em;
+
+.card:active {
+  transform: scale(0.95);
 }
 
-/* Ajuste específico para a Mão: 3 cartas por linha */
-#playerHand {
+.card.selected {
+  border-color: #00ff41;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.5);
+}
+
+/* Cores das cartas */
+.card.red { 
+  background: linear-gradient(135deg, #ff4757, #ff3742);
+}
+.card.blue { 
+  background: linear-gradient(135deg, #3742fa, #2f3542);
+}
+.card.green { 
+  background: linear-gradient(135deg, #2ed573, #1e90ff);
+}
+.card.yellow { 
+  background: linear-gradient(135deg, #ffa502, #ff6348);
+  color: #000;
+}
+
+/* Mão do jogador */
+.hand-area {
   display: grid;
-  grid-template-columns: repeat(3, auto);
-  justify-content: center;
-  gap: 10px;
-  margin: 10px auto;
+  grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+  gap: 8px;
+  justify-items: center;
+  min-height: 80px;
+  padding: 10px;
+  border: 2px dashed #00ff41;
+  border-radius: 8px;
+  background: rgba(0, 255, 65, 0.05);
 }
 
-/* Container dos grupos (mantém layout flex) */
-#groupsContainer {
+/* Grupos */
+.groups-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.group-zone {
+  border: 2px dashed #666;
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 90px;
+  background: rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.group-zone h3 {
+  font-size: 0.8rem;
+  margin-bottom: 5px;
+  text-align: center;
+  color: #999;
+}
+
+.group-cards {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
+  gap: 3px;
 }
 
-/* Pilha de Descarte: layout em grid com até 5 por linha */
-.discard-zone {
-  max-width: 600px;
+.group-zone.over {
+  border-color: #00ff41;
+  background: rgba(0, 255, 65, 0.1);
 }
+
+/* Descarte */
+.discard-zone {
+  border: 2px dashed #ff4757;
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 80px;
+  background: rgba(255, 71, 87, 0.05);
+}
+
 .discard-cards {
   display: grid;
-  grid-template-columns: repeat(5, auto);
-  gap: 10px;
-  justify-content: center;
-  margin-top: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+  gap: 5px;
+  justify-items: center;
 }
 
-/* Footer */
-.footer {
-  margin-top: 20px;
-  font-size: 0.9em;
-  color: #ccc;
+.discard-zone.over {
+  border-color: #ff3742;
+  background: rgba(255, 71, 87, 0.15);
 }
-/* Ajustes para mobile */
-@media (max-width: 600px) {
+
+/* Modal */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+  background: linear-gradient(135deg, #1a1a1a, #2a2a2a);
+  margin: 10% auto;
+  padding: 20px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 400px;
+  border: 2px solid #00ff41;
+  color: #00ff41;
+  position: relative;
+}
+
+.close {
+  position: absolute;
+  right: 15px;
+  top: 10px;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  color: #ff4757;
+}
+
+.modal-content h2 {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.modal-content h3 {
+  margin: 15px 0 10px 0;
+  color: #00cc33;
+}
+
+.modal-content ol {
+  padding-left: 20px;
+  margin-bottom: 15px;
+}
+
+.modal-content li {
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+/* Responsividade para telas muito pequenas */
+@media (max-width: 360px) {
   .card {
-    width: 20vw;
-    max-width: 60px;
-    font-size: 1.2em;
+    width: 45px;
+    height: 63px;
+    font-size: 1rem;
   }
-  #playerHand {
-    grid-template-columns: repeat(2, auto); /* Exemplo: 2 cartas por linha em telas menores */
+  
+  .container {
+    padding: 8px;
+    gap: 12px;
   }
+  
+  .controls {
+    gap: 8px;
+  }
+  
+  .btn {
+    padding: 10px 6px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Landscape mode para celulares */
+@media (orientation: landscape) and (max-height: 500px) {
+  .container {
+    gap: 10px;
+  }
+  
+  section {
+    padding: 10px;
+  }
+  
+  .groups-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  
+  .game-header h1 {
+    font-size: 1.4rem;
+  }
+}
+
+/* Animações */
+@keyframes cardDrop {
+  0% { transform: translateY(-10px); opacity: 0.7; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.card.dropped {
+  animation: cardDrop 0.3s ease;
+}
+
+/* Feedback visual para touch */
+.dropzone {
+  transition: all 0.2s ease;
+}
+
+.dropzone.over {
+  transform: scale(1.02);
 }
